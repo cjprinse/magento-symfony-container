@@ -2,9 +2,12 @@
 
 use ContainerTools\Configuration;
 use ContainerTools\ContainerGenerator;
+use Symfony\Component\Config\ConfigCache;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Container;
 use Bridge\MageApp;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 
 class Inviqa_SymfonyContainer_Helper_ContainerProvider
 {
@@ -64,16 +67,34 @@ class Inviqa_SymfonyContainer_Helper_ContainerProvider
      */
     private function _buildContainer()
     {
-        $this->_generatorConfig->addCompilerPass($this->_storeConfigCompilerPass);
-        $this->_generatorConfig->addCompilerPass($this->_injectableCompilerPass);
+        if (!$this->_container instanceof ProjectServiceContainer) {
+            $cacheFile = $this->_generatorConfig->getContainerFilePath();
+            $containerConfigCache = new ConfigCache($cacheFile, $this->_generatorConfig->getDebug());
 
-        $this->_mageApp->dispatchEvent(
-            'symfony_container_before_container_generator',
-            ['generator_config' => $this->_generatorConfig]
-        );
+            if (!$containerConfigCache->isFresh()) {
+                $this->_generatorConfig->addCompilerPass($this->_storeConfigCompilerPass);
+                $this->_generatorConfig->addCompilerPass($this->_injectableCompilerPass);
 
-        $generator = new ContainerGenerator($this->_generatorConfig);
+                $this->_mageApp->dispatchEvent(
+                    'symfony_container_before_container_generator',
+                    ['generator_config' => $this->_generatorConfig]
+                );
 
-        return $this->_container = $generator->getContainer();
+                $generator = new ContainerGenerator($this->_generatorConfig);
+                $containerBuilder = $generator->getContainer();
+                $containerBuilder->compile();
+
+                $dumper = new PhpDumper($containerBuilder);
+                $containerConfigCache->write(
+                    $dumper->dump(),
+                    $containerBuilder->getResources()
+                );
+            }
+
+            require_once $cacheFile;
+            $this->_container = new ProjectServiceContainer();
+        }
+
+        return $this->_container;
     }
 }
