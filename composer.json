@@ -1,5 +1,5 @@
 {
-    "name": "inviqa/magento-symfony-container",
+    "name": "cjprinse/magento-symfony-container",
     "type": "magento-module",
     "license": "proprietary",
     "description": "Provides Magento with an instance of a Symfony DI Container",
