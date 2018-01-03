@@ -82,7 +82,6 @@ class Inviqa_SymfonyContainer_Helper_ContainerProvider
 
                 $generator = new ContainerGenerator($this->_generatorConfig);
                 $containerBuilder = $generator->getContainer();
-                $containerBuilder->compile();
 
                 $dumper = new PhpDumper($containerBuilder);
                 $containerConfigCache->write(
